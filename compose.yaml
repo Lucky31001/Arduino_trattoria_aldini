@@ -1,0 +1,48 @@
+services:
+  database:
+    image: postgres:16-alpine
+    container_name: arduino-postgres
+    environment:
+      POSTGRES_DB: arduino_motion
+      POSTGRES_PASSWORD: arduino
+      POSTGRES_USER: arduino
+    ports:
+      - "5432:5432"
+    volumes:
+      - database_data:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer:4
+    container_name: arduino-adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - database
+
+  web:
+    build: .
+    container_name: arduino-web
+    working_dir: /app
+    command: sh -c "sh scripts/wait-for-it.sh database:5432 -- php bin/console doctrine:migrations:migrate --no-interaction && php -S 0.0.0.0:8000 public/index.php"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+    environment:
+      DATABASE_URL: $DATABASE_URL
+    depends_on:
+        - database
+        - worker
+
+  worker:
+    build: .
+    container_name: arduino-worker
+    working_dir: /app
+    command: sh -c "sh scripts/wait-for-it.sh database:5432 -- php bin/console doctrine:migrations:migrate --no-interaction && while true; do php bin/console app:devices:refresh-status --threshold=20; sleep 20; done"
+    volumes:
+      - ./:/app
+    environment:
+      DATABASE_URL: $DATABASE_URL
+
+volumes:
+  database_data:

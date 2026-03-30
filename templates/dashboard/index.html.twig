@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Arduino Motion Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f7f7f7; color: #1f1f1f; }
+        .container { max-width: 980px; margin: 0 auto; padding: 24px; }
+        .hint { color: #666; margin-bottom: 20px; }
+        section { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e9e9e9; }
+        .status-chip { display: inline-block; border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 700; }
+        .online { background: #dcfce7; color: #166534; }
+        .offline { background: #fee2e2; color: #991b1b; }
+        input[type='text'] { width: 180px; padding: 6px; }
+        button { padding: 7px 10px; border: 0; border-radius: 6px; cursor: pointer; background: #2563eb; color: #fff; }
+        .btn-danger { background: #dc2626; }
+        .empty { color: #666; }
+    </style>
+</head>
+<body>
+<main class="container">
+    <h1>Arduino Motion Dashboard (Symfony)</h1>
+    <p class="hint">Auto-refreshes every 5 seconds.</p>
+
+    <section>
+        <h2>Pending Devices</h2>
+        <div id="pending-devices"></div>
+    </section>
+
+    <section>
+        <h2>Validated Devices</h2>
+        <div id="validated-devices"></div>
+    </section>
+
+    <section>
+        <h2>Motion Events</h2>
+        <div id="motion-events"></div>
+    </section>
+</main>
+
+<script>
+const pendingContainer = document.getElementById('pending-devices');
+const validatedContainer = document.getElementById('validated-devices');
+const motionContainer = document.getElementById('motion-events');
+
+async function fetchJson(url, options) {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || 'Request failed');
+    }
+    return response.json();
+}
+
+function onlineBadge(isOnline) {
+    const className = isOnline ? 'online' : 'offline';
+    const text = isOnline ? 'online' : 'offline';
+    return `<span class="status-chip ${className}">${text}</span>`;
+}
+
+function renderDevices(devices) {
+    const pending = devices.filter((d) => d.status === 'pending');
+    const validated = devices.filter((d) => d.status === 'validated');
+
+    if (pending.length === 0) {
+        pendingContainer.innerHTML = '<p class="empty">No pending devices.</p>';
+    } else {
+        pendingContainer.innerHTML = `
+            <table>
+                <thead>
+                    <tr><th>Device ID</th><th>Last Seen (UTC)</th><th>Connectivity</th><th>Validate</th><th>Remove</th></tr>
+                </thead>
+                <tbody>
+                    ${pending.map((device) => `
+                        <tr>
+                            <td>${device.device_id}</td>
+                            <td>${device.last_seen}</td>
+                            <td>${onlineBadge(Boolean(device.online))}</td>
+                            <td>
+                                <input type="text" id="name-${device.id}" placeholder="Device name" />
+                                <button data-device-id="${device.id}" class="validate-btn">Validate</button>
+                            </td>
+                            <td>
+                                <button data-device-id="${device.id}" class="delete-btn btn-danger">Remove</button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    if (validated.length === 0) {
+        validatedContainer.innerHTML = '<p class="empty">No validated devices yet.</p>';
+    } else {
+        validatedContainer.innerHTML = `
+            <table>
+                <thead>
+                    <tr><th>Name</th><th>Device ID</th><th>Last Seen (UTC)</th><th>Connectivity</th><th>Update Name</th><th>Remove</th></tr>
+                </thead>
+                <tbody>
+                    ${validated.map((device) => `
+                        <tr>
+                            <td>${device.name || '-'}</td>
+                            <td>${device.device_id}</td>
+                            <td>${device.last_seen}</td>
+                            <td>${onlineBadge(Boolean(device.online))}</td>
+                            <td>
+                                <input type="text" id="update-name-${device.id}" value="${device.name || ''}" placeholder="Device name" />
+                                <button data-device-id="${device.id}" class="update-name-btn">Update</button>
+                            </td>
+                            <td>
+                                <button data-device-id="${device.id}" class="delete-btn btn-danger">Remove</button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    document.querySelectorAll('.validate-btn').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const id = button.getAttribute('data-device-id');
+            const nameInput = document.getElementById(`name-${id}`);
+            const name = nameInput.value.trim();
+            if (!name) {
+                alert('Please enter a name before validation.');
+                return;
+            }
+
+            try {
+                await fetchJson(`/api/devices/${id}/validate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name }),
+                });
+                await loadDashboard();
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+    });
+
+    document.querySelectorAll('.update-name-btn').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const id = button.getAttribute('data-device-id');
+            const nameInput = document.getElementById(`update-name-${id}`);
+            const name = nameInput.value.trim();
+            if (!name) {
+                alert('Please enter a name before updating.');
+                return;
+            }
+
+            try {
+                await fetchJson(`/api/devices/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name }),
+                });
+                await loadDashboard();
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+    });
+
+    document.querySelectorAll('.delete-btn').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const id = button.getAttribute('data-device-id');
+            if (!confirm('Delete this device?')) {
+                return;
+            }
+
+            try {
+                await fetchJson(`/api/devices/${id}`, {
+                    method: 'DELETE',
+                });
+                await loadDashboard();
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+    });
+}
+
+function renderMotions(motions) {
+    if (motions.length === 0) {
+        motionContainer.innerHTML = '<p class="empty">No motion events yet.</p>';
+        return;
+    }
+
+    motionContainer.innerHTML = `
+        <table>
+            <thead>
+                <tr><th>Device</th><th>Detected At (UTC)</th></tr>
+            </thead>
+            <tbody>
+                ${motions.map((motion) => `
+                    <tr>
+                        <td>${motion.device_name}</td>
+                        <td>${motion.detected_at}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+async function loadDashboard() {
+    try {
+        const [devicesPayload, motionsPayload] = await Promise.all([
+            fetchJson('/api/devices'),
+            fetchJson('/api/motions'),
+        ]);
+
+        renderDevices(devicesPayload.devices || []);
+        renderMotions(motionsPayload.motions || []);
+    } catch (error) {
+        pendingContainer.innerHTML = `<p class="empty">${error.message}</p>`;
+        validatedContainer.innerHTML = '';
+        motionContainer.innerHTML = '';
+    }
+}
+
+function isEditingDeviceName() {
+    const active = document.activeElement;
+    if (!active || active.tagName !== 'INPUT' || active.type !== 'text') {
+        return false;
+    }
+
+    return active.id.startsWith('name-') || active.id.startsWith('update-name-');
+}
+
+loadDashboard();
+setInterval(() => {
+    if (isEditingDeviceName()) {
+        return;
+    }
+
+    loadDashboard();
+}, 5000);
+</script>
+</body>
+</html>
+
