@@ -16,6 +16,7 @@ class ApiFormatter
             'id' => $device->getId(),
             'device_id' => $device->getDeviceId(),
             'name' => $device->getName(),
+            'notification_to' => $device->getNotificationTo(),
             'status' => $device->getStatus(),
             'last_seen' => $device->getLastSeen()->format('Y-m-d H:i:s'),
             'online' => $device->isOnline() ? 1 : 0,

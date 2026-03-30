@@ -145,13 +145,14 @@ final class ApiControllerTest extends WebTestCase
         $this->getEntityManager()->persist($device);
         $this->getEntityManager()->flush();
 
-        $client->request('POST', "/api/devices/{$device->getId()}/validate", [], [], ['CONTENT_TYPE' => 'application/json'], json_encode(['name' => 'My Device']));
+        $client->request('POST', "/api/devices/{$device->getId()}/validate", [], [], ['CONTENT_TYPE' => 'application/json'], json_encode(['name' => 'My Device', 'to' => 'topic-device-6']));
 
         self::assertResponseIsSuccessful();
         $data = json_decode($client->getResponse()->getContent(), true);
 
         self::assertSame(Device::STATUS_VALIDATED, $data['device']['status']);
         self::assertSame('My Device', $data['device']['name']);
+        self::assertSame('topic-device-6', $data['device']['notification_to']);
 
         $this->rollbackTransaction();
     }
@@ -166,12 +167,13 @@ final class ApiControllerTest extends WebTestCase
         $this->getEntityManager()->persist($device);
         $this->getEntityManager()->flush();
 
-        $client->request('PATCH', "/api/devices/{$device->getId()}", [], [], ['CONTENT_TYPE' => 'application/json'], json_encode(['name' => 'Updated Name']));
+        $client->request('PATCH', "/api/devices/{$device->getId()}", [], [], ['CONTENT_TYPE' => 'application/json'], json_encode(['name' => 'Updated Name', 'to' => 'topic-updated']));
 
         self::assertResponseIsSuccessful();
         $data = json_decode($client->getResponse()->getContent(), true);
 
         self::assertSame('Updated Name', $data['device']['name']);
+        self::assertSame('topic-updated', $data['device']['notification_to']);
 
         $this->rollbackTransaction();
     }
@@ -196,5 +198,6 @@ final class ApiControllerTest extends WebTestCase
 
         $this->rollbackTransaction();
     }
+
 }
 

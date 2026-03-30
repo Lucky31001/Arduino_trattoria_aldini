@@ -27,6 +27,9 @@ class Device
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $name = null;
 
+    #[ORM\Column(name: 'notification_to', length: 32, nullable: true)]
+    private ?string $notificationTo = null;
+
     #[ORM\Column(length: 32)]
     private string $status = self::STATUS_PENDING;
 
@@ -74,6 +77,19 @@ class Device
     public function setName(?string $name): self
     {
         $this->name = $name;
+        $this->updatedAt = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+
+        return $this;
+    }
+
+    public function getNotificationTo(): ?string
+    {
+        return $this->notificationTo;
+    }
+
+    public function setNotificationTo(?string $notificationTo): self
+    {
+        $this->notificationTo = $notificationTo;
         $this->updatedAt = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
 
         return $this;

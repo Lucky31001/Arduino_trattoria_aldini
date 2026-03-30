@@ -7,6 +7,9 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    app.ntfy_enabled: '%env(bool:default::NTFY_ENABLED)%'
+    app.ntfy_base_url: '%env(default::NTFY_BASE_URL)%'
+    app.ntfy_default_topic: '%env(default::NTFY_DEFAULT_TOPIC)%'
 
 services:
     # default configuration for services in *this* file
@@ -18,6 +21,12 @@ services:
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
+
+    App\Service\NtfyNotificationService:
+        arguments:
+            $enabled: '%app.ntfy_enabled%'
+            $baseUrl: '%app.ntfy_base_url%'
+            $defaultTopic: '%app.ntfy_default_topic%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

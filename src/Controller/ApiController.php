@@ -9,6 +9,7 @@ use App\Entity\MotionEvent;
 use App\Repository\DeviceRepository;
 use App\Repository\MotionEventRepository;
 use App\Service\ApiFormatter;
+use App\Service\NtfyNotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,6 +23,7 @@ class ApiController extends AbstractController
         private readonly DeviceRepository $deviceRepository,
         private readonly MotionEventRepository $motionEventRepository,
         private readonly ApiFormatter $formatter,
+        private readonly NtfyNotificationService $ntfyNotificationService,
     ) {
     }
 
@@ -73,6 +75,7 @@ class ApiController extends AbstractController
 
         $this->entityManager->persist($event);
         $this->entityManager->flush();
+        $this->ntfyNotificationService->sendMotionDetected($device, $event);
 
         return $this->json(['motion' => $this->formatter->motion($event)], 201);
     }
@@ -105,6 +108,7 @@ class ApiController extends AbstractController
     {
         $payload = $this->decodePayload($request);
         $name = trim((string) ($payload['name'] ?? ''));
+        $to = trim((string) ($payload['to'] ?? ''));
 
         if ($name === '') {
             return $this->json(['error' => 'name is required'], 422);
@@ -117,6 +121,7 @@ class ApiController extends AbstractController
         }
 
         $device->validateWithName($name);
+        $device->setNotificationTo($to !== '' ? $to : null);
         $this->entityManager->flush();
 
         return $this->json(['device' => $this->formatter->device($device)]);
@@ -127,9 +132,10 @@ class ApiController extends AbstractController
     {
         $payload = $this->decodePayload($request);
         $name = trim((string) ($payload['name'] ?? ''));
+        $to = trim((string) ($payload['to'] ?? ''));
 
-        if ($name === '') {
-            return $this->json(['error' => 'name is required'], 422);
+        if ($name === '' && !array_key_exists('to', $payload)) {
+            return $this->json(['error' => 'name or to is required'], 422);
         }
 
         $device = $this->deviceRepository->find($id);
@@ -138,7 +144,14 @@ class ApiController extends AbstractController
             return $this->json(['error' => 'Device not found'], 404);
         }
 
-        $device->setName($name);
+        if ($name !== '') {
+            $device->setName($name);
+        }
+
+        if (array_key_exists('to', $payload)) {
+            $device->setNotificationTo($to !== '' ? $to : null);
+        }
+
         $this->entityManager->flush();
 
         return $this->json(['device' => $this->formatter->device($device)]);

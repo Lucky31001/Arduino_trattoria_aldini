@@ -30,9 +30,13 @@ services:
       - ./:/app
     environment:
       DATABASE_URL: $DATABASE_URL
+      NTFY_ENABLED: ${NTFY_ENABLED:-1}
+      NTFY_BASE_URL: ${NTFY_BASE_URL:-http://ntfy}
+      NTFY_DEFAULT_TOPIC: ${NTFY_DEFAULT_TOPIC:-arduino-motion}
     depends_on:
         - database
         - worker
+        - ntfy
 
   worker:
     build: .
@@ -43,6 +47,16 @@ services:
       - ./:/app
     environment:
       DATABASE_URL: $DATABASE_URL
+      NTFY_ENABLED: ${NTFY_ENABLED:-1}
+      NTFY_BASE_URL: ${NTFY_BASE_URL:-http://ntfy}
+      NTFY_DEFAULT_TOPIC: ${NTFY_DEFAULT_TOPIC:-arduino-motion}
+
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    container_name: arduino-ntfy
+    command: serve
+    ports:
+      - "8085:80"
 
 volumes:
   database_data:

@@ -23,7 +23,7 @@
 <body>
 <main class="container">
     <h1>Arduino Motion Dashboard (Symfony)</h1>
-    <p class="hint">Auto-refreshes every 5 seconds.</p>
+    <p class="hint">Auto-refreshes every 5 seconds. Set a custom ntfy topic per device (optional).</p>
 
     <section>
         <h2>Pending Devices</h2>
@@ -71,7 +71,7 @@ function renderDevices(devices) {
         pendingContainer.innerHTML = `
             <table>
                 <thead>
-                    <tr><th>Device ID</th><th>Last Seen (UTC)</th><th>Connectivity</th><th>Validate</th><th>Remove</th></tr>
+                    <tr><th>Device ID</th><th>Last Seen (UTC)</th><th>Connectivity</th><th>Validate</th><th>ntfy Topic</th><th>Remove</th></tr>
                 </thead>
                 <tbody>
                     ${pending.map((device) => `
@@ -82,6 +82,10 @@ function renderDevices(devices) {
                             <td>
                                 <input type="text" id="name-${device.id}" placeholder="Device name" />
                                 <button data-device-id="${device.id}" class="validate-btn">Validate</button>
+                            </td>
+                            <td>
+                                <input type="text" id="to-${device.id}" placeholder="topic (optional)" />
+                                <button data-device-id="${device.id}" class="save-to-btn">Save</button>
                             </td>
                             <td>
                                 <button data-device-id="${device.id}" class="delete-btn btn-danger">Remove</button>
@@ -99,7 +103,7 @@ function renderDevices(devices) {
         validatedContainer.innerHTML = `
             <table>
                 <thead>
-                    <tr><th>Name</th><th>Device ID</th><th>Last Seen (UTC)</th><th>Connectivity</th><th>Update Name</th><th>Remove</th></tr>
+                    <tr><th>Name</th><th>Device ID</th><th>Last Seen (UTC)</th><th>Connectivity</th><th>ntfy Topic</th><th>Update</th><th>Remove</th></tr>
                 </thead>
                 <tbody>
                     ${validated.map((device) => `
@@ -108,6 +112,10 @@ function renderDevices(devices) {
                             <td>${device.device_id}</td>
                             <td>${device.last_seen}</td>
                             <td>${onlineBadge(Boolean(device.online))}</td>
+                            <td>
+                                <input type="text" id="update-to-${device.id}" value="${device.notification_to || ''}" placeholder="topic (optional)" />
+                                <button data-device-id="${device.id}" class="save-to-btn">Save</button>
+                            </td>
                             <td>
                                 <input type="text" id="update-name-${device.id}" value="${device.name || ''}" placeholder="Device name" />
                                 <button data-device-id="${device.id}" class="update-name-btn">Update</button>
@@ -126,7 +134,9 @@ function renderDevices(devices) {
         button.addEventListener('click', async () => {
             const id = button.getAttribute('data-device-id');
             const nameInput = document.getElementById(`name-${id}`);
+            const toInput = document.getElementById(`to-${id}`);
             const name = nameInput.value.trim();
+            const to = toInput.value.trim();
             if (!name) {
                 alert('Please enter a name before validation.');
                 return;
@@ -136,7 +146,7 @@ function renderDevices(devices) {
                 await fetchJson(`/api/devices/${id}/validate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name }),
+                    body: JSON.stringify({ name, to }),
                 });
                 await loadDashboard();
             } catch (error) {
@@ -149,9 +159,11 @@ function renderDevices(devices) {
         button.addEventListener('click', async () => {
             const id = button.getAttribute('data-device-id');
             const nameInput = document.getElementById(`update-name-${id}`);
+            const toInput = document.getElementById(`update-to-${id}`);
             const name = nameInput.value.trim();
-            if (!name) {
-                alert('Please enter a name before updating.');
+            const to = toInput.value.trim();
+            if (!name && !to) {
+                alert('Please enter a name or topic before updating.');
                 return;
             }
 
@@ -159,7 +171,7 @@ function renderDevices(devices) {
                 await fetchJson(`/api/devices/${id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name }),
+                    body: JSON.stringify({ name, to }),
                 });
                 await loadDashboard();
             } catch (error) {
@@ -178,6 +190,33 @@ function renderDevices(devices) {
             try {
                 await fetchJson(`/api/devices/${id}`, {
                     method: 'DELETE',
+                });
+                await loadDashboard();
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+    });
+
+    document.querySelectorAll('.save-to-btn').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const id = button.getAttribute('data-device-id');
+            const pendingInput = document.getElementById(`to-${id}`);
+            const validatedInput = document.getElementById(`update-to-${id}`);
+            const targetInput = pendingInput || validatedInput;
+
+            if (!targetInput) {
+                alert('Topic input not found.');
+                return;
+            }
+
+            const to = targetInput.value.trim();
+
+            try {
+                await fetchJson(`/api/devices/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ to }),
                 });
                 await loadDashboard();
             } catch (error) {
@@ -232,7 +271,10 @@ function isEditingDeviceName() {
         return false;
     }
 
-    return active.id.startsWith('name-') || active.id.startsWith('update-name-');
+    return active.id.startsWith('name-')
+        || active.id.startsWith('update-name-')
+        || active.id.startsWith('to-')
+        || active.id.startsWith('update-to-');
 }
 
 loadDashboard();
