@@ -23,5 +23,6 @@ test:
 clean:
 	docker compose down -v
 
-cli:
-	docker compose exec -T web php bin/console debug:router
+# access to the container
+shell:
+	docker compose exec web sh
