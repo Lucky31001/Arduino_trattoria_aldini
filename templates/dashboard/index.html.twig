@@ -57,7 +57,7 @@ async function fetchJson(url, options) {
 
 function onlineBadge(isOnline) {
     const className = isOnline ? 'online' : 'offline';
-    const text = isOnline ? 'online' : 'offline';
+    const text = isOnline ? 'Trigger' : 'Offline';
     return `<span class="status-chip ${className}">${text}</span>`;
 }
 

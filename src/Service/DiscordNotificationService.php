@@ -8,7 +8,7 @@ use Symfony\Component\Notifier\ChatterInterface;
 use Symfony\Component\Notifier\Exception\TransportExceptionInterface;
 use Symfony\Component\Notifier\Message\ChatMessage;
 
-readonly class TelegramNotificationService
+readonly class DiscordNotificationService
 {
 
     public function __construct(private ChatterInterface $chatter)
@@ -21,7 +21,7 @@ readonly class TelegramNotificationService
     public function sendMessage(Device $device): void
     {
         $message = new ChatMessage(sprintf('Motion detected on device %s: %s', $device->getName() ?: $device->getDeviceId(), (new \DateTime())->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s')));
-        $message->transport('telegram');
+        $message->transport('discord');
         $this->chatter->send($message);
     }
 }

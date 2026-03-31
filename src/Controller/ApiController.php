@@ -10,7 +10,7 @@ use App\Repository\DeviceRepository;
 use App\Repository\MotionEventRepository;
 use App\Service\ApiFormatter;
 use App\Service\NtfyNotificationService;
-use App\Service\TelegramNotificationService;
+use App\Service\DiscordNotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,12 +20,12 @@ use Symfony\Component\Routing\Attribute\Route;
 class ApiController extends AbstractController
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly DeviceRepository $deviceRepository,
-        private readonly MotionEventRepository $motionEventRepository,
-        private readonly ApiFormatter $formatter,
-        private readonly NtfyNotificationService $ntfyNotificationService,
-        private readonly TelegramNotificationService $telegramNotification,
+        private readonly EntityManagerInterface     $entityManager,
+        private readonly DeviceRepository           $deviceRepository,
+        private readonly MotionEventRepository      $motionEventRepository,
+        private readonly ApiFormatter               $formatter,
+        private readonly NtfyNotificationService    $ntfyNotificationService,
+        private readonly DiscordNotificationService $discordNotification,
     ) {
     }
 
@@ -78,7 +78,7 @@ class ApiController extends AbstractController
         $this->entityManager->persist($event);
         $this->entityManager->flush();
         $this->ntfyNotificationService->sendMotionDetected($device, $event);
-        $this->telegramNotification->sendMessage($device);
+//        $this->discordNotification->sendMessage($device);
 
         return $this->json(['motion' => $this->formatter->motion($event)], 201);
     }

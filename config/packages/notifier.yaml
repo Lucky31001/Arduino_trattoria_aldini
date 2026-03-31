@@ -1,4 +1,4 @@
 framework:
     notifier:
         chatter_transports:
-            telegram: '%env(TELEGRAM_DSN)%'
+            discord: '%env(DISCORD_DSN)%'
