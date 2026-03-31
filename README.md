@@ -16,10 +16,10 @@ Système Symfony 8 pour gérer des appareils Arduino physiques avec détection d
 
 ## Démarrage rapide
 ```bash
-make build      # Build les images Docker
-make up         # Lance les services
-make test       # Lance les tests unitaires
-make down       # Arrête les services
+make install      # Build les images Docker
+make run          # Lance les services
+make test         # Lance les tests unitaires
+make down         # Arrête les services
 ```
 
 ## Services
