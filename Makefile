@@ -23,6 +23,5 @@ test:
 clean:
 	docker compose down -v
 
-# access to the container
-shell:
+cli:
 	docker compose exec web sh

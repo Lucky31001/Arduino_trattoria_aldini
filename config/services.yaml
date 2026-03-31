@@ -10,6 +10,7 @@ parameters:
     app.ntfy_enabled: '%env(bool:default::NTFY_ENABLED)%'
     app.ntfy_base_url: '%env(default::NTFY_BASE_URL)%'
     app.ntfy_default_topic: '%env(default::NTFY_DEFAULT_TOPIC)%'
+    app.telegram_dsn: '%env(default::TELEGRAM_DSN)%'
 
 services:
     # default configuration for services in *this* file

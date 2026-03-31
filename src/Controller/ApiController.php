@@ -10,6 +10,7 @@ use App\Repository\DeviceRepository;
 use App\Repository\MotionEventRepository;
 use App\Service\ApiFormatter;
 use App\Service\NtfyNotificationService;
+use App\Service\TelegramNotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -24,6 +25,7 @@ class ApiController extends AbstractController
         private readonly MotionEventRepository $motionEventRepository,
         private readonly ApiFormatter $formatter,
         private readonly NtfyNotificationService $ntfyNotificationService,
+        private readonly TelegramNotificationService $telegramNotification,
     ) {
     }
 
@@ -76,6 +78,7 @@ class ApiController extends AbstractController
         $this->entityManager->persist($event);
         $this->entityManager->flush();
         $this->ntfyNotificationService->sendMotionDetected($device, $event);
+        $this->telegramNotification->sendMessage($device);
 
         return $this->json(['motion' => $this->formatter->motion($event)], 201);
     }
