@@ -1,13 +1,9 @@
-#!/usr/bin/env make -f
-SHELL := /bin/zsh
-.PHONY: build up down logs test test-all clean
 
 install:
 	docker compose build
 
 run:
 	docker compose up -d
-	docker compose exec -T web sh scripts/wait-for-it.sh database:5432 -- php bin/console doctrine:migrations:migrate --no-interaction
 
 down:
 	docker compose down -v

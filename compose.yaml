@@ -23,11 +23,12 @@ services:
     build: .
     container_name: arduino-web
     working_dir: /app
-    command: sh -c "sh scripts/wait-for-it.sh database:5432 -- php bin/console doctrine:migrations:migrate --no-interaction && php -S 0.0.0.0:8000 public/index.php"
+    command: bash -c "sh scripts/wait-for-it.sh database:5432 -- php bin/console doctrine:migrations:migrate --no-interaction && php -S 0.0.0.0:8000 public/index.php"
     ports:
       - "8000:8000"
     volumes:
       - ./:/app
+      - /app/vendor
     environment:
       DATABASE_URL: $DATABASE_URL
       NTFY_ENABLED: ${NTFY_ENABLED:-1}
@@ -42,9 +43,10 @@ services:
     build: .
     container_name: arduino-worker
     working_dir: /app
-    command: sh -c "sh scripts/wait-for-it.sh database:5432 -- php bin/console doctrine:migrations:migrate --no-interaction && while true; do php bin/console app:devices:refresh-status --threshold=20; sleep 20; done"
+    command: bash -c "sh scripts/wait-for-it.sh database:5432 -- php bin/console doctrine:migrations:migrate --no-interaction && while true; do php bin/console app:devices:refresh-status --threshold=20; sleep 20; done"
     volumes:
       - ./:/app
+      - /app/vendor
     environment:
       DATABASE_URL: $DATABASE_URL
       NTFY_ENABLED: ${NTFY_ENABLED:-1}

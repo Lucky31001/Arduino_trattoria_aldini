@@ -1,5 +1,3 @@
-#!/usr/bin/env sh
-set -eu
 
 if [ "$#" -lt 1 ]; then
   echo "Usage: $0 host:port [-- command ...]" >&2
