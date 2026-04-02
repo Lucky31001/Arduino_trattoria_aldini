@@ -28,6 +28,8 @@ class MotionEventRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('m')
             ->join('m.device', 'd')
             ->select('m.id AS id', 'd.deviceId AS device_id', 'COALESCE(d.name, d.deviceId) AS device_name', 'm.detectedAt AS detected_at')
+            ->where('d.range_cm <= 150')
+            ->andWhere('d.sum >= 400')
             ->orderBy('m.id', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()

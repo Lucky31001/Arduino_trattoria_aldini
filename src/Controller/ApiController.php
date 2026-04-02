@@ -83,7 +83,11 @@ class ApiController extends AbstractController
 
         $this->entityManager->persist($event);
         $this->entityManager->flush();
-        $this->ntfyNotificationService->sendMotionDetected($device, $event);
+
+        if ($event->getRangeCm() <= 150 || $event->getSum() >= 400) {
+            $this->ntfyNotificationService->sendMotionDetected($device, $event);
+            $this->discordNotification->sendMessage($device);
+        }
 
         return $this->json(['motion' => $this->formatter->motion($event)], 201);
     }
