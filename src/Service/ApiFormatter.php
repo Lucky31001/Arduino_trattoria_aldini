@@ -32,6 +32,8 @@ class ApiFormatter
             'id' => $event->getId(),
             'device_id' => $event->getDevice()->getId(),
             'detected_at' => $event->getDetectedAt()->format('Y-m-d H:i:s'),
+            'sum'         => $event->getSum(),
+            'range_cm'    => $event->getRangeCm(),
         ];
     }
 }

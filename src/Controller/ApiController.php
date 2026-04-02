@@ -72,13 +72,18 @@ class ApiController extends AbstractController
             return $this->json(['error' => 'Device is not validated'], 403);
         }
 
+        $sum   = isset($payload['sum'])   ? (int) $payload['sum']   : null;
+        $range = isset($payload['range']) ? (int) $payload['range'] : null;
+
         $device->touch();
         $event = new MotionEvent($device);
+
+        if ($sum !== null)   $event->setSum($sum);
+        if ($range !== null) $event->setRangeCm($range);
 
         $this->entityManager->persist($event);
         $this->entityManager->flush();
         $this->ntfyNotificationService->sendMotionDetected($device, $event);
-//        $this->discordNotification->sendMessage($device);
 
         return $this->json(['motion' => $this->formatter->motion($event)], 201);
     }
