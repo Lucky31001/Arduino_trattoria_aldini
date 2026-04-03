@@ -84,7 +84,7 @@ class ApiController extends AbstractController
         $this->entityManager->persist($event);
         $this->entityManager->flush();
 
-        if ($event->getRangeCm() <= 150 || $event->getSum() >= 400) {
+        if ($event->getRangeCm() <= 150 && $event->getSum() >= 400) {
             $this->ntfyNotificationService->sendMotionDetected($device, $event);
             $this->discordNotification->sendMessage($device);
         }
